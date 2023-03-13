@@ -22,12 +22,12 @@ func main() {
 	config := apiserver.NewConfig()
 	_, err := toml.DecodeFile(configPath, config)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 
 	s := apiserver.New(config)
 	if err := s.Start(); err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 	s.Start()
 }

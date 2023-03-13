@@ -5,15 +5,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 	"github.com/obadoraibu/url-shortener/internal/app/store"
+	"github.com/sirupsen/logrus"
 )
 
 type APIServer struct {
 	config *Config
 	logger *logrus.Logger
 	router *mux.Router
-	store *store.Store
+	store  *store.Store
 }
 
 func New(config *Config) *APIServer {
@@ -30,7 +30,6 @@ func (s *APIServer) Start() error {
 	}
 
 	s.configureRouter()
-
 
 	if err := s.configureStore(); err != nil {
 		return err
