@@ -6,12 +6,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"github.com/obadoraibu/url-shortener/internal/app/store"
 )
 
 type APIServer struct {
 	config *Config
 	logger *logrus.Logger
 	router *mux.Router
+	store *store.Store
 }
 
 func New(config *Config) *APIServer {
@@ -28,6 +30,11 @@ func (s *APIServer) Start() error {
 	}
 
 	s.configureRouter()
+
+
+	if err := s.configureStore(); err != nil {
+		return err
+	}
 
 	s.logger.Info("starting apiserver...")
 
@@ -51,4 +58,14 @@ func (s *APIServer) HandleHello() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "hello")
 	}
+}
+
+func (s *APIServer) configureStore() error {
+	st := store.New(s.config.StoreConfig)
+	if err := st.Open(); err != nil {
+		return err
+	}
+
+	s.store = st
+	return nil
 }
