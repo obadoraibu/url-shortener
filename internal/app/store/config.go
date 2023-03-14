@@ -6,6 +6,6 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
-		DatabaseUrl: "postgres://postgres:postgrespw@localhost:55002/apiserver_dev?sslmode=disable",
+		DatabaseUrl: "postgres://postgres:qwerty@localhost:5432/restapi_dev?sslmode=disable",
 	}
 }
