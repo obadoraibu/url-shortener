@@ -2,26 +2,23 @@ package store
 
 import (
 	"database/sql"
-	"fmt"
-
 	_ "github.com/lib/pq"
 )
 
 type Store struct {
-	config         *Config
-	db             *sql.DB
-	userRepository *UserRepository
+	dbUrl         string
+	db            *sql.DB
+	urlRepository *URLRepository
 }
 
-func New(config *Config) *Store {
+func New(u string) *Store {
 	return &Store{
-		config: config,
+		dbUrl: u,
 	}
 }
 
 func (s *Store) Open() error {
-	fmt.Println(s.config.DatabaseUrl)
-	db, err := sql.Open("postgres", s.config.DatabaseUrl)
+	db, err := sql.Open("postgres", s.dbUrl)
 	if err != nil {
 		return err
 	}
@@ -36,14 +33,14 @@ func (s *Store) Close() {
 	s.db.Close()
 }
 
-func (s *Store) User() *UserRepository {
-	if s.userRepository != nil {
-		return s.userRepository
+func (s *Store) URL() *URLRepository {
+	if s.urlRepository != nil {
+		return s.urlRepository
 	}
 
-	s.userRepository = &UserRepository{
+	s.urlRepository = &URLRepository{
 		store: s,
 	}
 
-	return s.userRepository
+	return s.urlRepository
 }

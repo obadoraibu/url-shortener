@@ -1,7 +1,10 @@
 package apiserver
 
 import (
-	"io"
+	"encoding/json"
+	"fmt"
+	"github.com/obadoraibu/url-shortener/internal/app/model"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -50,17 +53,95 @@ func (s *APIServer) configureLogger() error {
 }
 
 func (s *APIServer) configureRouter() {
-	s.router.HandleFunc("/hello", s.HandleHello())
+	s.router.HandleFunc("/", s.HandleMain())
+	s.router.HandleFunc("/add", s.HandleUrlAdd()).Methods("POST")
+	s.router.HandleFunc("/{short_url}", s.HandleShort()).Methods("GET")
+	s.router.HandleFunc("/delete", s.HandleDelete()).Methods("POST")
 }
 
-func (s *APIServer) HandleHello() http.HandlerFunc {
+func (s *APIServer) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	w.WriteHeader(code)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
+func (s *APIServer) Error(w http.ResponseWriter, error string, code int) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	fmt.Fprintln(w, error)
+}
+
+func (s *APIServer) HandleMain() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "hello")
+		s.respond(w, r, 200, "URL-Shortener")
+	}
+}
+
+func (s *APIServer) HandleUrlAdd() http.HandlerFunc {
+	type request struct {
+		LongUrl  string `json:"long_url"`
+		ShortUrl string `json:"short_url"`
+	}
+	type respond struct {
+		DeleteKey string `json:"delete_key"`
+		ShortUrl  string `json:"short_url"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		deleteKey := uuid.NewV4()
+		u := &model.URL{
+			LongURL:   req.LongUrl,
+			ShortURL:  req.ShortUrl,
+			DeleteKey: deleteKey.String(),
+		}
+		u, err := s.store.URL().Create(u)
+		if err != nil {
+			s.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.respond(w, r, 200, respond{DeleteKey: deleteKey.String(), ShortUrl: u.ShortURL})
+	}
+}
+
+func (s *APIServer) HandleShort() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		shortUrl := vars["short_url"]
+		u, err := s.store.URL().FindByShortUrl(shortUrl)
+		if err != nil {
+			s.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		http.Redirect(w, r, u.LongURL, http.StatusSeeOther)
+	}
+}
+
+func (s *APIServer) HandleDelete() http.HandlerFunc {
+	type request struct {
+		ShortUrl  string `json:"short_url"`
+		DeleteKey string `json:"delete_key"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := s.store.URL().Delete(req.ShortUrl, req.DeleteKey); err != nil {
+			s.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.respond(w, r, 200, "")
 	}
 }
 
 func (s *APIServer) configureStore() error {
-	st := store.New(s.config.StoreConfig)
+	st := store.New(s.config.DatabaseUrl)
 	if err := st.Open(); err != nil {
 		return err
 	}
