@@ -1,2 +1,14 @@
 # url-shortener
-url-shortener rest api in golang
+URL-shortener REST-API
+
+### Для запуска приложения:
+
+```
+make build && make run
+```
+
+Если приложение запускается впервые, необходимо применить миграции к базе данных:
+
+```
+make migrate
+```

@@ -3,9 +3,10 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/obadoraibu/url-shortener/internal/app/model"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/obadoraibu/url-shortener/internal/app/store"
@@ -38,7 +39,7 @@ func (s *APIServer) Start() error {
 		return err
 	}
 
-	s.logger.Info("starting apiserver...")
+	s.logger.Info("starting apiserver")
 
 	return http.ListenAndServe(s.config.BinAddr, s.router)
 }
