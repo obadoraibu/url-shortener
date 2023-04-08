@@ -1,9 +1,6 @@
 build:
-	docker-compose build todo-app
+	docker-compose build apiserver
 
 run:
-	docker-compose up todo-app
-
-migrate:
-	migrate -path ./schema -database 'postgres://postgres:qwerty@0.0.0.0:5432/postgres?sslmode=disable' up
-
+	docker-compose up apiserver
+	
